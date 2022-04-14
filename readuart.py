@@ -50,6 +50,4 @@ while True:
                     d[i] = float(d[i]) / 1000.0
                 file_uwbdata.file_handle.write("%.3f %6.3f %6.3f %6.3f %6.3f\n" %
                                                (time.time(), d[0], d[1], d[2], d[3]))
-                j = j + 1
-                if j == 10:
-                    break
+                file_uwbdata.file_handle.flush()
