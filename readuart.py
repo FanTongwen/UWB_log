@@ -1,14 +1,14 @@
-import serial
 import time
 import numpy as np
 from fileWriter import *
+import rospy
+from std_msgs.msg import String
+import serial
+
+rospy.init_node('uwb')
+
 ser = serial.Serial(
-    port="COM9",              # number of device, numbering starts at
-    # zero. if everything fails, the user
-    # can specify a device string, note
-    # that this isn't portable anymore
-    # if no port is specified an unconfigured
-    # an closed serial port object is created
+    port="/dev/ttyACM0",              
     baudrate=115200,          # baud rate
     bytesize=serial.EIGHTBITS,     # number of databits
     parity=serial.PARITY_NONE,     # enable parity checking
@@ -19,7 +19,7 @@ ser = serial.Serial(
     interCharTimeout=None   # Inter-character timeout, None to disable
 )
 
-#ser.open()
+# ser.open()
 if ser.is_open:
     print("open success")
 else:
@@ -28,26 +28,28 @@ else:
 i = 0
 j = 0
 BaseStationNum = 4
+
 d = [0 for col in range(BaseStationNum)]
-file_uwbdata = fileWriter(r'.\data\file_uwbdata.txt')
+file_uwbdata = fileWriter(r'./data/file_uwbdata.txt')
 while True:
     if ser.in_waiting:
+        timestamp = rospy.Time.now()
         str1 = ser.read(ser.in_waiting).decode("gbk")
-        if str1 == "exit":  # 退出标志
+        if str1 == "exit": 
             break
         else:
             str1_1 = str1[0:64]
             str1_2 = str1[65:-1]
             tag = str1_1[0:2]
-            # d_0 = str1_1[6:14]   # a0 到标签距离
-            # d_1 = str1_1[15:23]  # a1 到标签距离
-            # d_2 = str1_1[24:32]  # a2 到标签距离
-            # d_3 = str1_1[33:41]  # a3 到标签距离
-            if tag == "mc":
+            #print(timestamp.to_sec())
+
+            if tag == "mc" and len(str1_1) == 64:
                 for i in range(BaseStationNum):
                     d_hex = str1_1[6 + i*9: 14 + i*9]
                     d[i] = int(d_hex, 16)
                     d[i] = float(d[i]) / 1000.0
-                file_uwbdata.file_handle.write("%.3f %6.3f %6.3f %6.3f %6.3f\n" %
-                                               (time.time(), d[0], d[1], d[2], d[3]))
+                print("%.5f %6.3f %6.3f %6.3f %6.3f\n" %
+                                               (timestamp.to_sec(), d[0], d[1], d[2], d[3]))
+                file_uwbdata.file_handle.write("%.5f %6.3f %6.3f %6.3f %6.3f\n" %
+                                               (timestamp.to_sec(), d[0], d[1], d[2], d[3]))
                 file_uwbdata.file_handle.flush()
